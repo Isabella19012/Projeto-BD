@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "descricao": "Encher Piscina",
+    "valor": 1200.0
+  },
+  {
+    "id": 2,
+    "descricao": "Cortar grama",
+    "valor": 25.0
+  }
+]
