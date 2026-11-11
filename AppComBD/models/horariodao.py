@@ -1,56 +1,84 @@
 from models.horario import Horario
-import json
+import pyodbc
 
-class HorarioDAO:
-    def __init__(self):
-        self.__arquivo = "horarios.json"
-        self.__objetos = []
-        self.__abrir()
 
-    def inserir(self, obj):
-        id = 0
-        if len(self.__objetos) > 0:
-            for aux in self.__objetos:
-                if aux.get_id() > id: id = aux.get_id()
-        obj.set_id(id + 1)
-        self.__objetos.append(obj)
-        self.__salvar()
+try:
 
-    def listar(self):                
-        return self.__objetos
+    string_conexao = 'Driver={ODBC Driver 17 for SQL Server};Server=.;Database=isabella_pratica;UID=sa;PWD=senha@12345'
 
-    def listar_id(self, id):
-        for obj in self.__objetos:
-            if obj.get_id() == id: return obj
-        return None
+    conexao = pyodbc.connect(string_conexao)
+    print("Conexão bem-sucedida!")
+    print()
+    print('Tabela Horário')
 
-    def atualizar(self, obj):
-        aux = self.listar_id(obj.get_id())
-        if aux != None:
-            self.__objetos.remove(aux)
-            self.__objetos.append(obj)
-            self.__salvar()
+    class ServicoDAO:
+        def __conexao(self):
+                string_conexao = 'Driver={ODBC Driver 17 for SQL Server};Server=.;Database=isabella_pratica;UID=sa;PWD=senha@12345'
+                return pyodbc.connect(string_conexao)
 
-    def excluir(self, id):
-        aux = self.listar_id(id)
-        if aux != None:
-            self.__objetos.remove(aux)
-            self.__salvar()
 
-    def __abrir(self):  
-        try:  
-            arquivo = open(self.__arquivo, mode = "r")
-            list_dic = json.load(arquivo)
-            arquivo.close()
-            self.__objetos = []
-            for dic in list_dic:
-                obj = Horario.from_json(dic)
-                self.__objetos.append(obj)
-        except FileNotFoundError:
-            pass
-
-    def __salvar(self):    
-        arquivo = open(self.__arquivo, mode = "w")
-        json.dump(self.__objetos, arquivo, default = Horario.to_json, indent = 2)
-        arquivo.close()
+        def inserir(self, obj):
+            conexao = self.__conexao()
+            cursor = conexao.cursor()
+            sql = "INSERT INTO Horario (data, confirmado, id_servico, id_cliente) VALUES (?, ?, ?, ?)"
+            valores = (obj.get_data(), obj.get_confirmado(), obj.get_servico(), obj.get_cliente())
         
+            cursor.execute(sql, valores)
+            conexao.commit()
+            cursor.close()
+            conexao.close()
+
+        def listar(self):    
+            conexao = self.__conexao()
+            cursor = conexao.cursor()
+            sql = "SELECT id, data, confirmado, id_servico, id_cliente FROM Horario"
+            cursor.execute(sql)
+            
+            registros = cursor.fetchall()
+            objeto_horarios = []
+            
+            for reg in registros:
+                c = Horario(reg[0], reg[1], reg[2], reg[3], reg[4]) 
+                objeto_horarios.append(c)
+                
+            cursor.close()
+            conexao.close()
+            return objeto_horarios
+
+        def listar_id(self, id):
+            conexao = self.__conexao()
+            cursor = conexao.cursor()
+            sql = f"SELECT id, data, confirmado, id_servico, id_cliente FROM Horario WHERE id = {id}"
+            cursor.execute(sql)
+            
+            reg = cursor.fetchone()
+            cursor.close()
+            conexao.close()
+            
+            if reg:
+                return Horario(reg[0], reg[1], reg[2], reg[3], reg[4])
+            return None
+        def atualizar(self, obj):
+            conexao = self.__conexao()
+            cursor = conexao.cursor()
+            sql = "UPDATE Horario SET data = ?, data = ?, id_servico = ?, id_cliente = ? WHERE id = ?"
+            valores = (obj.get_data(), obj.get_data(), obj.get_id_servico(), obj.get_id_cliente())
+            
+            cursor.execute(sql, valores)
+            conexao.commit()
+            cursor.close()
+            conexao.close()
+        def excluir(self, id):
+            conexao = self.__conexao()
+            cursor = conexao.cursor()
+            sql = f"""
+            delete from Horario where id = {id}
+
+            """
+            cursor.execute(sql)
+            cursor.close()
+            conexao.close()
+
+
+except Exception as err:
+    print(f"Erro BD: {err}")
