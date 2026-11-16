@@ -1,56 +1,87 @@
-from models.horario import Horario
-import json
+import pyodbc
+from .horario import Horario
+
 
 class HorarioDAO:
-    def __init__(self):
-        self.__arquivo = "horarios.json"
-        self.__objetos = []
-        self.__abrir()
+    conn = None
+    string_conexao = 'Driver={ODBC Driver 17 for SQL Server};Server=.;Database=isabella_atv;UID=sa;PWD=senha@12345'
 
-    def inserir(self, obj):
-        id = 0
-        if len(self.__objetos) > 0:
-            for aux in self.__objetos:
-                if aux.get_id() > id: id = aux.get_id()
-        obj.set_id(id + 1)
-        self.__objetos.append(obj)
-        self.__salvar()
+    @classmethod
+    def abrir(cls):
+        cls.conn = pyodbc.connect(cls.string_conexao)
 
-    def listar(self):                
-        return self.__objetos
+    @classmethod
+    def fechar(cls):
+        if cls.conn:
+            cls.conn.close()
+            cls.conn = None
 
-    def listar_id(self, id):
-        for obj in self.__objetos:
-            if obj.get_id() == id: return obj
-        return None
+    @classmethod
+    def execute(cls, sql, params=None):
+        cursor = cls.conn.cursor()
+        cursor.execute(sql, params or ())
+        cls.conn.commit()
+        return cursor
 
-    def atualizar(self, obj):
-        aux = self.listar_id(obj.get_id())
-        if aux != None:
-            self.__objetos.remove(aux)
-            self.__objetos.append(obj)
-            self.__salvar()
+    @classmethod
+    def inserir(cls, obj):
+        try:
+            cls.abrir()
+            sql = """
+                INSERT INTO Horario (data, confirmado, id_cliente, id_servico)
+                VALUES (?, ?, ?, ?)
+            """
+            cls.execute(sql,(obj.get_data(), obj.get_confirmado(), obj.get_id_cliente(), obj.get_servico()),)
+        finally:
+            cls.fechar()
 
-    def excluir(self, id):
-        aux = self.listar_id(id)
-        if aux != None:
-            self.__objetos.remove(aux)
-            self.__salvar()
+    @classmethod
+    def listar(cls):
+        try:
+            cls.abrir()
+            sql = "SELECT id, nome, email, fone, senha FROM Horario"
+            cursor = cls.execute(sql)
+            rows = cursor.fetchall()
+            return [Horario(*row) for row in rows]
+        finally:
+            cls.fechar()
 
-    def __abrir(self):  
-        try:  
-            arquivo = open(self.__arquivo, mode = "r")
-            list_dic = json.load(arquivo)
-            arquivo.close()
-            self.__objetos = []
-            for dic in list_dic:
-                obj = Horario.from_json(dic)
-                self.__objetos.append(obj)
-        except FileNotFoundError:
-            pass
+    @classmethod
+    def listar_id(cls, id):
+        try:
+            cls.abrir()
+            sql = "SELECT id, data, confirmado, id_cliente, id_servico FROM Horario WHERE id = ?"
+            cursor = cls.execute(sql, (id,))
+            row = cursor.fetchone()
+            return Horario(*row) if row else None
+        finally:
+            cls.fechar()
 
-    def __salvar(self):    
-        arquivo = open(self.__arquivo, mode = "w")
-        json.dump(self.__objetos, arquivo, default = Horario.to_json, indent = 2)
-        arquivo.close()
-        
+    @classmethod
+    def atualizar(cls, obj):
+        try:
+            cls.abrir()
+            sql = """
+                UPDATE Horario SET data=?, confirmado=?, id_cliente=?, id_servico=?
+                WHERE id=?
+            """
+            cls.execute(sql,(obj.get_data(),obj.get_confirmado(),obj.get_id_cliente(),obj.get_id_servico(),obj.get_id(),),)
+        finally:
+            cls.fechar()
+
+    @classmethod
+    def excluir(cls, id):
+        try:
+            cls.abrir()
+            sql = "DELETE FROM Horario WHERE id=?"
+            cls.execute(sql, (id,))
+        finally:
+            cls.fechar()
+
+if __name__ == "__main__":
+    try:
+        HorarioDAO.abrir()
+        print("Conexão bem-sucedida!")
+        HorarioDAO.fechar()
+    except Exception as err:
+        print(f"Erro BD: {err}")
