@@ -4,7 +4,7 @@ from .horario import Horario
 
 class HorarioDAO:
     conn = None
-    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.;Database=isabella_atv;UID=sa;PWD=senha@12345'
+    string_conexao = 'Driver={ODBC Driver 17 for SQL Server};Server=.;Database=isabella_atv;UID=sa;PWD=senha@12345'
     @classmethod
     def abrir(cls):
         cls.conn = pyodbc.connect(cls.string_conexao)
