@@ -14,7 +14,7 @@ create table Servico(
 create table Horario(
 	id int identity,
 	data datetime not null,
-	confrimado bit not null,
+	confirmado bit not null,
 	id_servico int not null,
 	id_cliente int not null,
 	primary key(id),
