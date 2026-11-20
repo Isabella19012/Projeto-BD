@@ -4,7 +4,8 @@ from .servico import Servico
 
 class ServicoDAO:
     conn = None
-    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.\\SQLEXPRESS;Database=isabella_atv;UID=sa;PWD=senha@12345'
+    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.;Database=isabella_atv;UID=sa;PWD=senha@12345'
+
 
     @classmethod
     def abrir(cls):
@@ -20,7 +21,6 @@ class ServicoDAO:
     def execute(cls, sql, params=None):
         cursor = cls.conn.cursor()
         cursor.execute(sql, params or ())
-        cls.conn.commit()
         return cursor
 
     @classmethod
@@ -28,10 +28,11 @@ class ServicoDAO:
         try:
             cls.abrir()
             sql = """
-                INSERT INTO Servico (nome, email, fone, senha)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO Servico (descricao, valor)
+                VALUES (?, ?)
             """
-            cls.execute(sql,(obj.get_nome(), obj.get_email(), obj.get_fone(), obj.get_senha()),)
+            cls.execute(sql,(obj.get_descricao(), obj.get_valor()),)
+            cls.conn.commit()
         finally:
             cls.fechar()
 
@@ -39,7 +40,7 @@ class ServicoDAO:
     def listar(cls):
         try:
             cls.abrir()
-            sql = "SELECT id, nome, email, fone, senha FROM Servico"
+            sql = "SELECT id, descricao, valor FROM Servico"
             cursor = cls.execute(sql)
             rows = cursor.fetchall()
             return [Servico(*row) for row in rows]
@@ -65,7 +66,8 @@ class ServicoDAO:
                 UPDATE Servico SET descricao=?, valor=?
                 WHERE id=?
             """
-            cls.execute(sql,(obj.get_nome(),obj.get_email(),obj.get_fone(),obj.get_senha(),obj.get_id(),),)
+            cls.execute(sql,(obj.get_descricao(),obj.get_valor(),obj.get_id()),)
+            cls.conn.commit()
         finally:
             cls.fechar()
 
@@ -75,6 +77,7 @@ class ServicoDAO:
             cls.abrir()
             sql = "DELETE FROM Servico WHERE id=?"
             cls.execute(sql, (id,))
+            cls.conn.commit()
         finally:
             cls.fechar()
 

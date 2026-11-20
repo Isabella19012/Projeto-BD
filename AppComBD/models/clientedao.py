@@ -4,7 +4,7 @@ from .cliente import Cliente
 
 class ClienteDAO:
     conn = None
-    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.\\SQLEXPRESS;Database=isabella_atv;UID=sa;PWD=senha@12345'
+    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.;Database=isabella_atv;UID=sa;PWD=senha@12345'
 
     @classmethod
     def abrir(cls):
@@ -20,7 +20,6 @@ class ClienteDAO:
     def execute(cls, sql, params=None):
         cursor = cls.conn.cursor()
         cursor.execute(sql, params or ())
-        cls.conn.commit()
         return cursor
 
     @classmethod
@@ -32,6 +31,7 @@ class ClienteDAO:
                 VALUES (?, ?, ?)
             """
             cls.execute(sql,(obj.get_nome(), obj.get_email(), obj.get_fone()),)
+            cls.conn.commit()
         finally:
             cls.fechar()
 
@@ -66,6 +66,7 @@ class ClienteDAO:
                 WHERE id=?
             """
             cls.execute(sql,(obj.get_nome(),obj.get_email(),obj.get_fone(),obj.get_id(),),)
+            cls.conn.commit()
         finally:
             cls.fechar()
 
@@ -75,6 +76,7 @@ class ClienteDAO:
             cls.abrir()
             sql = "DELETE FROM Cliente WHERE id=?"
             cls.execute(sql, (id,))
+            cls.conn.commit()
         finally:
             cls.fechar()
 

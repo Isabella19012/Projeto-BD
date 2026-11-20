@@ -4,8 +4,7 @@ from .horario import Horario
 
 class HorarioDAO:
     conn = None
-    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.\\SQLEXPRESS;Database=isabella_atv;UID=sa;PWD=senha@12345'
-
+    string_conexao = 'Driver={ODBC Driver 18 for SQL Server};Server=.;Database=isabella_atv;UID=sa;PWD=senha@12345'
     @classmethod
     def abrir(cls):
         cls.conn = pyodbc.connect(cls.string_conexao)
@@ -20,8 +19,8 @@ class HorarioDAO:
     def execute(cls, sql, params=None):
         cursor = cls.conn.cursor()
         cursor.execute(sql, params or ())
-        cls.conn.commit()
         return cursor
+
 
     @classmethod
     def inserir(cls, obj):
@@ -31,7 +30,8 @@ class HorarioDAO:
                 INSERT INTO Horario (data, confirmado, id_cliente, id_servico)
                 VALUES (?, ?, ?, ?)
             """
-            cls.execute(sql,(obj.get_data(), obj.get_confirmado(), obj.get_id_cliente(), obj.get_servico()),)
+            cls.execute(sql,(obj.get_data(), obj.get_confirmado(), obj.get_id_cliente(), obj.get_id_servico()),)
+            cls.conn.commit()
         finally:
             cls.fechar()
 
@@ -39,7 +39,7 @@ class HorarioDAO:
     def listar(cls):
         try:
             cls.abrir()
-            sql = "SELECT id, nome, email, fone, senha FROM Horario"
+            sql = "SELECT id, data, confirmado, id_cliente, id_servico FROM Horario"
             cursor = cls.execute(sql)
             rows = cursor.fetchall()
             return [Horario(*row) for row in rows]
@@ -66,6 +66,7 @@ class HorarioDAO:
                 WHERE id=?
             """
             cls.execute(sql,(obj.get_data(),obj.get_confirmado(),obj.get_id_cliente(),obj.get_id_servico(),obj.get_id(),),)
+            cls.conn.commit()
         finally:
             cls.fechar()
 
@@ -75,6 +76,7 @@ class HorarioDAO:
             cls.abrir()
             sql = "DELETE FROM Horario WHERE id=?"
             cls.execute(sql, (id,))
+            cls.conn.commit()
         finally:
             cls.fechar()
 
